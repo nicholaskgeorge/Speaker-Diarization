@@ -1,0 +1,5 @@
+ # plt.plot(range(1, 4), wcss)
+    # plt.title('Elbow Method')
+    # plt.xlabel('Number of clusters')
+    # plt.ylabel('WCSS')
+    # plt.show()
