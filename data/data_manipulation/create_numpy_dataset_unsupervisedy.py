@@ -2,35 +2,22 @@ import librosa
 import numpy as np
 import os 
 import re
+from segmentation_parameters import SEGMENTATION_LENGTH
+import sys
+sys.path.append(os.path.abspath(r"file_movement_scripts"))
+from delete_files_in_folder import delete_files_in_folder
+from get_files_in_folder import get_files_in_folder
 
-SEGMENTATION_LENGTH = 0.5
-DATA_POINT_LENGTH = 12
-NUM_ITERATIONS = int(DATA_POINT_LENGTH/SEGMENTATION_LENGTH)
+sys.path.append(os.path.abspath(r"feature_extraction"))
+from get_mfcc import get_mffcc_stuff
 
-segmented_data_path = r"C:\Users\nicok\Speaker-Diarization\Training_Data\segmentation\audio_files"
-dest_file_path = r"C:\Users\nicok\Speaker-Diarization\Training_Data\segmentation\numpy_files"
+segmented_data_path = r"data\training_data\segmentation\audio_files"
+dest_file_path = r"data\training_data\segmentation\numpy_files\cluster_data"
+label_file_path = r"data\training_data\segmentation\numpy_files\cluster_labels"
 use_mean = False
-def get_mffcc_stuff(data_path):
-    # load audio files with librosa
-    signal, sr = librosa.load(data_path)
 
-    #normalize the audio
-    signal  = librosa.util.normalize(signal)
-    #get mfccs and all deltas
-    # print(data_path)
-    # print(f"signal length is {len(signal)}")
-    mfccs = librosa.feature.mfcc(y=signal, n_mfcc=13, sr=sr)
-    # delta_mfccs = librosa.feature.delta(mfccs)
-    # delta2_mfccs = librosa.feature.delta(mfccs, order=2)
-
-    #make into one data point
-    mfccs_features = mfccs #np.concatenate((mfccs, delta_mfccs, delta2_mfccs))
-
-    #flatten data set
-    data_point = mfccs_features.flatten()
-
-    return data_point
-
+delete_files_in_folder(dest_file_path)
+delete_files_in_folder(label_file_path)
 def extract_numbers(string):
     pattern = r'point(\d+)_(\d+)_speakers_segment_(\d+)\.wav'
     match = re.search(pattern, string)
@@ -91,28 +78,38 @@ def load_into_matrix(path):
 
     return data_matrix, label_vector, data_mean
 
-# # shuffle the data
-# np.random.seed(49)
+files = get_files_in_folder(segmented_data_path)
+full_data_path = os.path.join(segmented_data_path, files[0])
+feature_num = len(get_mffcc_stuff(full_data_path))
+run_count = 0
+data_matrix = np.empty((0, feature_num))
+label_vector = np.array([])
+#initiate matrix
+old_data_point = [0,0,0]
+
+for file in files:
+    point, num_speakers, segment = extract_numbers(file)
+
+    if old_data_point[0] != point:
+        run_count = 0
+        label_vector = np.append(label_vector, old_data_point[1])
+        data_point_np_path = os.path.join(dest_file_path, f"point{old_data_point[0]}_{old_data_point[1]}_speakers.npy")
+        np.save(data_point_np_path, data_matrix)
+
+    if run_count == 0:
+        data_matrix = np.empty((0, feature_num))
 
 
-# # Shuffle the indices
-# shuffled_indices = np.random.permutation(len(data_matrix))
-test_matrix, test_labels, test_data_mean = load_into_matrix(segmented_data_path)
+    full_data_path = os.path.join(segmented_data_path, file)
+    data_point = get_mffcc_stuff(full_data_path)
+    data_matrix = np.vstack((data_matrix, data_point))
 
-#normalize data
-# if use_mean:
-#     train_matrix = train_matrix-train_data_mean
-#     test_matrix = test_matrix-train_data_mean
+    run_count += 1
+    old_data_point = [point,num_speakers,segment]
 
-#save the matrix
-testing_data_path = os.path.join(dest_file_path, "clustering_data.npy")
-testing_label_path = os.path.join(dest_file_path, "clustering_labels.npy")
-# data_mean_path = os.path.join(dest_file_path, "speaker_data_feature_mean.npy")
-
-
-np.save(testing_data_path, test_matrix)
-np.save(testing_label_path, test_labels)
-# np.save(data_mean_path, train_data_mean)
+label_np_path = os.path.join(label_file_path, f"all_labels.npy")
+np.save(label_np_path, label_vector)
+    
 
 
 

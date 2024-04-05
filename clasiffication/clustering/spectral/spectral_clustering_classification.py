@@ -4,46 +4,41 @@ import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 import numpy as np
+import os
+import sys
+from sklearn.cluster import KMeans
 
-DATA_PATH = r"C:\Users\nicok\Speaker-Diarization\data\training_Data\segmentation\numpy_files\clustering_data.npy"
-DARA_LABELS = r"C:\Users\nicok\Speaker-Diarization\data\training_Data\segmentation\numpy_files\clustering_labels.npy"
+sys.path.append(os.path.abspath(r"file_movement_scripts"))
+from get_files_in_folder import get_files_in_folder
 
-SEGMENTATION_LENGTH = 0.25
-DATA_POINT_LENGTH = 4
-NUM_ITERATIONS = int(DATA_POINT_LENGTH/SEGMENTATION_LENGTH)
+DATA_PATH = r"data\training_data\segmentation\numpy_files\cluster_data"
+LABEL_PATH = r"data\training_data\segmentation\numpy_files\cluster_labels\all_labels.npy"
 
-clustering_data = np.load(DATA_PATH)
-clustering_labels = np.load(DARA_LABELS)
-print(clustering_data)
-point_start = 0
-point_end = NUM_ITERATIONS
+files = get_files_in_folder(DATA_PATH)
+clustering_labels = np.load(LABEL_PATH)
 
-# Calculate WCSS for different number of clusters
-min_clusters = 2
-max_clusters = 4
 
-for point in range(len(clustering_data)):
+def kmeans_and_plot(X, max_clusters=4):
+    wss = []
+    for k in range(1, max_clusters):
+        kmeans = KMeans(init="random", n_clusters=k, n_init=10, random_state=1)
+        kmeans.fit(X)
+        wss.append(kmeans.inertia_)  # Inertia is the WSS
+    plt.plot(range(1, max_clusters), wss, marker='o')
+    plt.xlabel('Number of Clusters (k)')
+    plt.ylabel('Within-Cluster Sum of Squares (WSS)')
+    plt.title('Elbow Method for Optimal k')
+    plt.show()
+
+
+for index, data_point in enumerate(files):
     # List to store silhouette scores
     silhouette_scores = []
-
-    # Calculate silhouette score for different number of clusters
-    for n_clusters in range(min_clusters, max_clusters+1):
-        kmeans = KMeans(n_clusters=n_clusters, init='k-means++', max_iter=300, n_init=10, random_state=0)
-        kmeans.fit(clustering_data)
-        cluster_labels = kmeans.labels_
-        silhouette_avg = silhouette_score(clustering_data, cluster_labels)
-        silhouette_scores.append(silhouette_avg)
-
-    # Find the optimal number of clusters based on silhouette score
-    optimal_n_clusters = np.argmax(silhouette_scores) + min_clusters
-    print("Optimal number of clusters based on silhouette score:", optimal_n_clusters)
-
-    plt.plot(range(min_clusters, max_clusters+1), silhouette_scores, marker='o')
-    plt.xlabel('Number of clusters')
-    plt.ylabel('Silhouette Score')
-    plt.title('Silhouette Score for Different Numbers of Clusters')
-    plt.show()
+    matrix_path = os.path.join(DATA_PATH, data_point)
+    clustering_data = np.load(matrix_path)
+    print(f"Current label is {clustering_labels[index]}")
+    kmeans_and_plot(clustering_data)
     
-    point_start += NUM_ITERATIONS
-    point_end += NUM_ITERATIONS
+
+    
 
