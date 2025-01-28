@@ -1,3 +1,4 @@
 /data/training_data
 /data/raw_datasets
 /data/speaker_seperated_data
+/data/silence_detection_data
