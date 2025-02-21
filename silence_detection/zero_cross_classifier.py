@@ -1,4 +1,4 @@
-from zero_cross_rate import zcr_calc
+from silence_detection.zero_cross_rate import zcr_calc
 
 #returns 1 if voice present 0 if not
 def zcr_classify(signal, threshold=0.14):
