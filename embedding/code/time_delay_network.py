@@ -14,3 +14,9 @@ class TDNN(layers.Layer):
     def call(self, inputs):
         expanded_inputs = tf.concat([tf.roll(inputs, shift, axis=1) for shift in self.context], axis=-1)
         return self.conv1d(expanded_inputs)
+    
+class StatsLayer(layers.Layer):
+    def call(self, inputs):
+        mean = tf.reduce_mean(inputs, axis=1)
+        std = tf.math.reduce_std(inputs, axis=1)
+        return tf.concat([mean, std], axis=1)

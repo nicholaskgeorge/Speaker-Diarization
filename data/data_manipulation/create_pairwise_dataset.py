@@ -47,8 +47,6 @@ def process_paired_dataset(paired_dataset_path):
         mfcc_2_list.append(mfcc_features[1])
         labels.append(label)
 
-    print(f"mfcc_1 {len(mfcc_1_list)}")
-    print(f"mfcc_2 {len(mfcc_2_list)}")
     return np.array(mfcc_1_list), np.array(mfcc_2_list), np.array(labels)
 
 if __name__ == "__main__":
