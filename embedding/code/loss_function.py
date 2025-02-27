@@ -19,7 +19,8 @@ class CustomLossLayer(Layer):
             trainable=True
         )
 
-    def call(self, embeddings, same_speaker):
+    def call(self, inputs):
+        embeddings, same_speaker = inputs
         # Compute the similarity matrix
         similarity_matrix = tf.matmul(embeddings, embeddings, transpose_b=True)
         # Apply the transformation using S and b
@@ -29,6 +30,6 @@ class CustomLossLayer(Layer):
         prob_same = tf.sigmoid(transformed_similarity)
         # Compute the loss for each pair in the batch
         loss_matrix = -same_speaker * tf.math.log(prob_same + 1e-10) - (1 - same_speaker) * tf.math.log(1 - prob_same + 1e-10)
-        # Return the mean loss over all pairs
+        # Add the mean loss over all pairs
         self.add_loss(tf.reduce_mean(loss_matrix))
         return embeddings  # Return embeddings for further use
