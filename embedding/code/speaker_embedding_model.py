@@ -1,14 +1,9 @@
 import tensorflow as tf
-from tensorflow.keras import layers, Model
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras import backend as K
-
-
-
 import numpy as np
-import os
-import sys
-import glob
+from   tensorflow.keras import layers, Model
+from   tensorflow.keras.optimizers import Adam
+
+
 
 # Import your custom layers
 from time_delay_network import TDNN, StatsLayer
@@ -36,16 +31,15 @@ class SpeakerEmbeddingModel:
         inputs = tf.keras.Input(shape=(self.segment_length, self.input_dim))
         
         # TDNN layers as described in the paper
-        x = TDNN(output_dim=512, context=[-1, 0, 1], input_dim=self.input_dim)(inputs)
-        x = TDNN(output_dim=512, context=[-2, 0, 2], input_dim=512)(x)
-        x = TDNN(output_dim=512, context=[-3, 0, 3], input_dim=512)(x)
-        x = TDNN(output_dim=512, context=[-3, 0, 3], input_dim=512)(x)
+        x = TDNN(output_dim=150 , dilation_rate=1, num_frames_per_filter=3, num_features=self.input_dim)(inputs)
+        x = TDNN(output_dim=1000, dilation_rate=1, num_frames_per_filter=4, num_features=self.input_dim)(x)
+        x = TDNN(output_dim=500 , dilation_rate=2, num_frames_per_filter=3, num_features=self.input_dim)(x)
         
         # Stats pooling layer
         x = StatsLayer()(x)
         
         # Final dense layers
-        x = layers.Dense(512, activation='relu')(x)
+        x = layers.Dense(500, activation='relu')(x)
         embeddings = layers.Dense(self.embedding_dim)(x)
         
         # # Normalize the embeddings
