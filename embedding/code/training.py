@@ -20,10 +20,10 @@ batch_size = 32  # Adjust based on your system's capabilities
 
 # Shuffle and batch the dataset
 dataset = dataset.shuffle(buffer_size=len(labels))
-dataset = dataset.batch(batch_size)
+dataset = dataset.batch(batch_size, drop_remainder=True)
 
 # Initialize the model
 model = SpeakerEmbeddingModel(input_dim=40, segment_length=10, embedding_dim=128)
 
 # Train the model
-model.train(dataset, epochs=10)
+model.train(dataset, epochs=2)

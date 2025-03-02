@@ -21,16 +21,19 @@ class TDNN(layers.Layer):
          # Calculate effective receptive field
         erf = (self.num_frames_per_filter - 1) * self.dilation_rate + 1
         input_length = inputs.shape[1]
-
+        # print(f"the input a convo layer is {inputs.shape}")
         if input_length is not None and erf > input_length:
             raise ValueError(f"Effective receptive field ({erf}) exceeds input sequence length ({input_length}). "
                              f"Consider reducing kernel_size or dilation_rate.")
-        
         return self.conv(inputs)
 
 class StatsLayer(layers.Layer):
     def call(self, inputs):
-
+        # print(f"the shape of the input to the stat layer is: {inputs.shape}")
         mean = tf.reduce_mean(inputs, axis=1)
         std = tf.math.reduce_std(inputs, axis=1)
         return tf.concat([mean, std], axis=1)
+    
+class NormalizationLayer(layers.Layer):
+    def call(self, inputs):
+        return tf.linalg.normalize(inputs, axis=1)[0]  # Normalize along axis 1 and return the normalized tensor
