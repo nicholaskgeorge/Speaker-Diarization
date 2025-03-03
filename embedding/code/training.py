@@ -16,7 +16,7 @@ mfcc_1, mfcc_2, labels = dataset["mfcc_1"], dataset["mfcc_2"], dataset["labels"]
 # Create a TensorFlow Dataset from the NumPy arrays
 dataset = tf.data.Dataset.from_tensor_slices((mfcc_1, mfcc_2, labels))
 
-batch_size = 32  # Adjust based on your system's capabilities
+batch_size = 48  # Adjust based on your system's capabilities
 
 # Shuffle and batch the dataset
 dataset = dataset.shuffle(buffer_size=len(labels))
@@ -27,5 +27,4 @@ model = SpeakerEmbeddingModel(input_dim=NUM_MFCC_COEFFICENTS, segment_length=10,
 
 # Train the model
 model.train(dataset, epochs=40)
-
 model.save_model('embedding/pretrained_models/embedding_model.h5')

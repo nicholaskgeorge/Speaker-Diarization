@@ -2,6 +2,7 @@ import tensorflow as tf
 from tensorflow.keras import layers
 from tensorflow.keras.initializers import HeNormal
 
+@tf.keras.utils.register_keras_serializable()
 class TDNN(layers.Layer):
     def __init__(self, output_dim, dilation_rate, num_frames_per_filter, num_features, **kwargs):
         super(TDNN, self).__init__(**kwargs)
@@ -42,6 +43,7 @@ class TDNN(layers.Layer):
         
         return output
 
+@tf.keras.utils.register_keras_serializable()
 class StatsLayer(layers.Layer):
     def call(self, inputs):
         # Use built-in TF functions with better numerical stability
@@ -55,9 +57,10 @@ class StatsLayer(layers.Layer):
         # Check for NaN values
         mean = tf.where(tf.math.is_nan(mean), tf.zeros_like(mean), mean)
         std = tf.where(tf.math.is_nan(std), tf.ones_like(std), std)
-        
+
         return tf.concat([mean, std], axis=1)
-    
+
+@tf.keras.utils.register_keras_serializable() 
 class NormalizationLayer(layers.Layer):
     def call(self, inputs):
         return tf.linalg.normalize(inputs, axis=1)[0]  # Normalize along axis 1 and return the normalized tensor
