@@ -71,7 +71,7 @@ distance_matrix = cosine_distances(embeddings)
 # Step 2: Perform Agglomerative Clustering
 clustering = AgglomerativeClustering(
     n_clusters=None,  # Let the algorithm decide the number of clusters
-    distance_threshold=0.5,  # Adjust based on your data
+    distance_threshold=5,  # Adjust based on your data
     linkage='average'
 )
 clustering.fit(distance_matrix)
