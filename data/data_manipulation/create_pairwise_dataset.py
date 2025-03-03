@@ -7,7 +7,7 @@ PAIRED_DATASET_PATH = 'data/audio_files/for_embedding_training/paired_dataset'  
 OUTPUT_FILE_PATH = 'data/audio_files/for_embedding_training/pairwise_numpy/pair_dataset'   # Path to save the new MFCC dataset
 SAMPLE_RATE = 44100                                     # Sample rate of the audio files
 DURATION = 1.0                                          # Duration to analyze (in seconds)
-N_MFCC = 40                                             # Number of MFCC coefficients
+N_MFCC = 48                                             # Number of MFCC coefficients
 HOP_LENGTH = int(SAMPLE_RATE * DURATION / 10)           # Hop length to get 10 frames per second
 
 def extract_mfcc(file_path, sample_rate, duration, n_mfcc, hop_length):
@@ -46,8 +46,20 @@ def process_paired_dataset(paired_dataset_path):
         mfcc_1_list.append(mfcc_features[0])
         mfcc_2_list.append(mfcc_features[1])
         labels.append(label)
+    
+    mfcc_1_list = np.array(mfcc_1_list)
+    mfcc_2_list = np.array(mfcc_2_list)
 
-    return np.array(mfcc_1_list), np.array(mfcc_2_list), np.array(labels)
+    # normalize across each frame
+    mfcc_1_list_mean = np.mean(mfcc_1_list, axis=-1, keepdims=True)
+    mfcc_2_list_mean = np.mean(mfcc_2_list, axis=-1, keepdims=True)
+    mfcc_1_list_std = np.std(mfcc_1_list, axis=-1, keepdims=True)
+    mfcc_2_list_std = np.std(mfcc_2_list, axis=-1, keepdims=True)
+
+    mfcc_1_list = (mfcc_1_list - mfcc_1_list_mean) / mfcc_1_list_std
+    mfcc_2_list = (mfcc_2_list - mfcc_2_list_mean) / mfcc_2_list_std
+
+    return mfcc_1_list, mfcc_2_list, np.array(labels)
 
 if __name__ == "__main__":
     mfcc_1, mfcc_2, labels = process_paired_dataset(PAIRED_DATASET_PATH)

@@ -1,11 +1,10 @@
 import tensorflow as tf
 import numpy as np
-from   tensorflow.keras import layers, Model
-from   tensorflow.keras.optimizers import Adam
+import matplotlib.pyplot as plt
+from tensorflow.keras import layers, Model
+from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.initializers import HeNormal
 tf.config.run_functions_eagerly(True)
-
-
 
 # Import your custom layers
 from time_delay_network import TDNN, StatsLayer, NormalizationLayer
@@ -30,17 +29,17 @@ class SpeakerEmbeddingModel:
 
         self.frac_dataset_diff_speaker = 0.7
 
-        # since there are many more examples of diff speakers than the same we introduce this 
-        # constant to keep the effect of the same speaker cases the same
-        self.diff_speaker_equalizer = self.frac_dataset_diff_speaker /(1-self.frac_dataset_diff_speaker )
-        self.diff_speaker_equalizer = 1/self.diff_speaker_equalizer
+        # Since there are many more examples of different speakers than the same,
+        # we introduce this constant to balance the effect.
+        self.diff_speaker_equalizer = self.frac_dataset_diff_speaker / (1 - self.frac_dataset_diff_speaker)
+        self.diff_speaker_equalizer = 1 / self.diff_speaker_equalizer
     
     def _build_embedding_model(self):
         """Build the TDNN model that extracts embeddings from speech segments"""
         inputs = tf.keras.Input(shape=(self.segment_length, self.input_dim))
         
         # TDNN layers as described in the paper
-        x = TDNN(output_dim=128 , dilation_rate=1, num_frames_per_filter=3, num_features=self.input_dim)(inputs)
+        x = TDNN(output_dim=128, dilation_rate=1, num_frames_per_filter=3, num_features=self.input_dim)(inputs)
         x = TDNN(output_dim=1024, dilation_rate=1, num_frames_per_filter=4, num_features=self.input_dim)(x)
         x = TDNN(output_dim=512, dilation_rate=2, num_frames_per_filter=3, num_features=self.input_dim)(x)
         
@@ -66,7 +65,7 @@ class SpeakerEmbeddingModel:
         x_transform = tf.reduce_sum(embedding1 * tf.transpose(s_matrix_times_x), axis=1, keepdims=True)
         s_matrix_times_y = tf.matmul(self.S, tf.transpose(embedding2))
         y_transform = tf.reduce_sum(embedding2 * tf.transpose(s_matrix_times_y), axis=1, keepdims=True)
-        scores = dot_product - x_transform - y_transform + self.b
+        scores = tf.add(tf.subtract(tf.subtract(dot_product, x_transform), y_transform), self.b)
         return scores
     
     def compute_loss(self, embeddings1, embeddings2, same_speaker):
@@ -78,10 +77,10 @@ class SpeakerEmbeddingModel:
         probabilities = tf.sigmoid(scores)
         # Binary cross-entropy loss
         same_speaker = tf.cast(same_speaker, tf.float32)
-        same_speaker = tf.expand_dims(same_speaker, axis=1) 
+        same_speaker = tf.expand_dims(same_speaker, axis=1)
         epsilon = tf.keras.backend.epsilon()
-        error_same = same_speaker * tf.math.log(probabilities+epsilon) 
-        error_diff = (1 - same_speaker) * tf.math.log(1 - probabilities+epsilon) * self.diff_speaker_equalizer
+        error_same = same_speaker * tf.math.log(probabilities + epsilon)
+        error_diff = (1 - same_speaker) * tf.math.log(1 - probabilities + epsilon) * self.diff_speaker_equalizer
         loss = -tf.reduce_mean(error_same + error_diff)
         return loss
     
@@ -94,14 +93,11 @@ class SpeakerEmbeddingModel:
             embeddings2 = self.model(segment2_batch, training=True)
             # Compute loss
             loss = self.compute_loss(embeddings1, embeddings2, same_speaker_batch)
-            print(f"loss is {loss}")
         
         # Get trainable variables from both the model and the similarity parameters
         trainable_vars = self.model.trainable_variables + [self.S, self.b]
-        
         # Compute gradients
         gradients = tape.gradient(loss, trainable_vars)
-        print(f"gradients are: {gradients[0][0][0]}")
         
         # Apply gradients
         self.optimizer.apply_gradients(zip(gradients, trainable_vars))
@@ -110,6 +106,7 @@ class SpeakerEmbeddingModel:
     
     def train(self, train_dataset, epochs=10):
         """Train the model for a specified number of epochs"""
+        epoch_losses = []  # List to store loss for each epoch
         
         for epoch in range(epochs):
             # Training
@@ -117,14 +114,24 @@ class SpeakerEmbeddingModel:
             num_batches = 0
             
             for segment1_batch, segment2_batch, same_speaker_batch in train_dataset:
-                print(f"batch number {num_batches}")
                 batch_loss = self.train_step(segment1_batch, segment2_batch, same_speaker_batch)
                 train_loss += batch_loss
                 num_batches += 1
-            
+
             train_loss /= num_batches
+            epoch_losses.append(train_loss)  # Record the average loss for this epoch
             
             print(f"Epoch {epoch+1}/{epochs}, Train Loss: {train_loss:.4f}")
+        
+        # Plot the training loss over epochs
+        plt.figure(figsize=(10, 6))
+        plt.plot(range(1, epochs + 1), epoch_losses, marker='o', label='Training Loss')
+        plt.title('Training Loss Over Epochs')
+        plt.xlabel('Epochs')
+        plt.ylabel('Loss')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
     
     def load_best_model(self):
         """Load the best model weights and scoring parameters"""
@@ -133,9 +140,11 @@ class SpeakerEmbeddingModel:
         self.b.assign(np.load('best_b_value.npy'))
     
     def get_embedding(self, segment):
-        """Get embedding for a single speech segment"""
-        # Add batch dimension if needed
-        if len(segment.shape) == 2:
-            segment = tf.expand_dims(segment, 0)
-        
-        return self.model(segment, training=False)
+            """Get embedding for a single speech segment"""
+            # Add batch dimension if needed
+            if len(segment.shape) == 2:
+                segment = tf.expand_dims(segment, 0)
+            
+            return self.model(segment, training=False)
+    def save_model(self, model_path):
+        self.model.save(model_path)

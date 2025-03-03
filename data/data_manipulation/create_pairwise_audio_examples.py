@@ -6,7 +6,7 @@ import random
 DATASET_PATH = 'data/audio_files/silence_removed_vctk'  # Path to the dataset
 OUTPUT_PATH = 'data/audio_files/for_embedding_training/paired_dataset'           # Path to save the new dataset
 DIFF_SPEAKER_RATIO = 0.7                                 # Ratio of pairs from different speakers
-MAX_PAIRS = 10000                                          # Maximum number of pairs to generate
+MAX_PAIRS = 3000                                          # Maximum number of pairs to generate
 
 def create_paired_dataset(dataset_path, output_path, diff_speaker_ratio=0.5, max_pairs=1000):
     # Ensure the output directory exists
