@@ -49,7 +49,7 @@ custom_objects = {
     'NormalizationLayer': NormalizationLayer
 }
 
-model = load_model('embedding/pretrained_models/embedding_model.h5', custom_objects=custom_objects)
+model = load_model('embedding/pretrained_models/embedding_model_2.h5', custom_objects=custom_objects)
 
 reshaped_data = np.expand_dims(mfcc_matrices[0], axis=0)
 
@@ -71,7 +71,7 @@ distance_matrix = cosine_distances(embeddings)
 # Step 2: Perform Agglomerative Clustering
 clustering = AgglomerativeClustering(
     n_clusters=None,  # Let the algorithm decide the number of clusters
-    distance_threshold=5,  # Adjust based on your data
+    distance_threshold=1.5,  # Adjust based on your data
     linkage='average'
 )
 clustering.fit(distance_matrix)

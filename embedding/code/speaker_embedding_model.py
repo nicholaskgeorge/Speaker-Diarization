@@ -39,9 +39,9 @@ class SpeakerEmbeddingModel:
         inputs = tf.keras.Input(shape=(self.segment_length, self.input_dim))
         
         # TDNN layers as described in the paper
-        x = TDNN(output_dim=128, dilation_rate=1, num_frames_per_filter=3, num_features=self.input_dim)(inputs)
-        x = TDNN(output_dim=1024, dilation_rate=1, num_frames_per_filter=4, num_features=self.input_dim)(x)
-        x = TDNN(output_dim=512, dilation_rate=2, num_frames_per_filter=3, num_features=self.input_dim)(x)
+        x = TDNN(output_dim=128, dilation_rate=1, num_frames_per_filter=3)(inputs)
+        x = TDNN(output_dim=1024, dilation_rate=2, num_frames_per_filter=2)(x)
+        x = TDNN(output_dim=512, dilation_rate=2, num_frames_per_filter=2)(x)
         
         # Stats pooling layer
         x = StatsLayer()(x)

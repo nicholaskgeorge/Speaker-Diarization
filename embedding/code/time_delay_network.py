@@ -4,12 +4,11 @@ from tensorflow.keras.initializers import HeNormal
 
 @tf.keras.utils.register_keras_serializable()
 class TDNN(layers.Layer):
-    def __init__(self, output_dim, dilation_rate, num_frames_per_filter, num_features, **kwargs):
+    def __init__(self, output_dim, dilation_rate, num_frames_per_filter, **kwargs):
         super(TDNN, self).__init__(**kwargs)
         self.output_dim = output_dim
         self.dilation_rate = dilation_rate
         self.num_frames_per_filter = num_frames_per_filter
-        self.num_features = num_features
         
         # Use a slightly smaller initialization scale
         self.conv = layers.Conv1D(
