@@ -135,7 +135,4 @@ module silence_detection #(
         end
 
     end
-    
-
-
 endmodule
