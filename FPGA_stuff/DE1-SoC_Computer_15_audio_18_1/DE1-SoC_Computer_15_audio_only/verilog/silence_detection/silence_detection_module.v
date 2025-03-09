@@ -1,7 +1,7 @@
 module silence_detection #(
-    parameter FRAME_LENGTH = 4800
-    parameter NUM_FSM_STATES = 4
-    parameter AUDIO_DATA_BIT_SIZE = 32
+    parameter FRAME_LENGTH = 4800,
+    parameter NUM_FSM_STATES = 4,
+    parameter AUDIO_DATA_BIT_SIZE = 32,
     parameter ZCR_THRESHOLD = 
 )
 (

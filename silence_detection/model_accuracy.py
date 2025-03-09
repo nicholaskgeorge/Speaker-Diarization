@@ -4,6 +4,10 @@ import numpy as np
 from pydub import AudioSegment
 from signal_energy_classifier import sig_classify
 from zero_cross_classifier import zcr_classify
+import sys
+
+root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+sys.path.append(root_path)
 
 def calculate_accuracy(output_folder, decision_function):
     """
@@ -33,6 +37,8 @@ def calculate_accuracy(output_folder, decision_function):
             
             # Apply the input decision function to the audio signal
             signal = np.array(audio.get_array_of_samples())  # Convert audio to numpy array
+            decide = ["silent","voice"]
+            print(f"this samples label was {decide[label]}")
             prediction = decision_function(signal)
             
             # Compare the prediction with the ground truth
@@ -49,7 +55,7 @@ def calculate_accuracy(output_folder, decision_function):
     return accuracy
 
 # Example usage
-output_folder = r"C:\Users\nicok\Speaker-Diarization\data\silence_detection_data\Data\edited"  # Replace with your output folder path
+output_folder = r"data\silence_detection_set"  # Replace with your output folder path
 
 # # Call the function to calculate accuracy, passing the decision function as input
 # print("Print Sig Classify")

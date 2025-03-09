@@ -364,12 +364,13 @@ wire			[15: 0]	hex3_hex0;
 //assign HEX1 = ~hex3_hex0[14: 8];
 //assign HEX2 = ~hex3_hex0[22:16];
 //assign HEX3 = ~hex3_hex0[30:24];
-assign HEX4 = 7'b1111111;
-assign HEX5 = 7'b1111111;
-assign HEX3 = 7'b1111111;
-assign HEX2 = 7'b1111111;
-assign HEX1 = 7'b1111111;
-assign HEX0 = 7'b1111111;
+// assign HEX4 = 7'b1111111;
+// assign HEX5 = 7'b1111111;
+// assign HEX3 = 7'b1111111;
+// assign HEX2 = 7'b1111111;
+// assign HEX1 = 7'b1111111;
+// assign HEX0 = 7'b1111111;
+HexDigit HexDisplay(HEX0, silent_or_not);
 
 //=======================================================
 // Bus controller for AVALON bus-master
@@ -419,6 +420,27 @@ reg [7:0] read_right_avaliable;
 reg [7:0] write_right_avaliable;
 reg [7:0] write_left_avaliable;
 reg [31:0] mic_input;
+
+module silence_detection #(
+    4800,
+    4,
+    ,32
+    parameter ZCR_THRESHOLD = 6174;
+)
+(
+    input clk,
+    input reset,
+    
+    input input_audio [AUDIO_DATA_BIT_SIZE-1:0],
+    input dac_audio_valid,
+
+    output val,
+    output val_ready
+
+    //this signal goes high on the cycle the first sample  of the segment is analyzed
+    //it goes low on the cycle the result is given
+    output analyzing_segment;
+)
 
 
 always @(posedge CLOCK_50) begin //CLOCK_50

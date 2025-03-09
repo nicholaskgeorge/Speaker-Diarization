@@ -1,2 +1,4 @@
 /data/audio_files/
 /.venv_low
+/.local_asus
+/data/silence_detection_set/

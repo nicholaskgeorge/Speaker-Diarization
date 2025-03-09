@@ -1,4 +1,5 @@
 import numpy as np
+from math import log2, ceil
 
 #takes difference of signs
 def zc_diff(a,b):
@@ -11,9 +12,9 @@ def zc_diff(a,b):
 
 #calculates to zero cross rate. Input must be at minimum length 2
 def zcr_calc(signal):
-    norm_signal = signal/np.max(signal)
     zcr = 0
-    n_factor = 1/(len(norm_signal)-1)
-    for i in range(1,len(norm_signal)):
-        zcr += zc_diff(norm_signal[i],norm_signal[i-1])
-    return n_factor*zcr
+    #n_factor = 1/(len(signal)-1)
+    print(len(signal))
+    for i in range(1,len(signal)):
+        zcr += zc_diff(signal[i]>>6,signal[i-1]>>6)
+    return zcr>>(int(log2(len(signal))))
