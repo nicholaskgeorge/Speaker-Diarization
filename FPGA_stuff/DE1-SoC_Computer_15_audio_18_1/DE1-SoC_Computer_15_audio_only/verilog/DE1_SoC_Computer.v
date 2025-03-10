@@ -1,3 +1,4 @@
+`include "silence_detection\silence_detection_module.v"
 
 
 module DE1_SoC_Computer (
@@ -407,7 +408,7 @@ assign LEDR = fifo_space ;
 reg [31:0] dds_accum ;
 // DDS LUT
 wire [15:0] sine_out ;
-sync_rom sineTable(CLOCK_50, dds_accum[31:24], sine_out);
+// sync_rom sineTable(CLOCK_50, dds_accum[31:24], sine_out);
 
 // get some signals exposed
 // connect bus master signals to i/o for probes
@@ -421,26 +422,35 @@ reg [7:0] write_right_avaliable;
 reg [7:0] write_left_avaliable;
 reg [31:0] mic_input;
 
-module silence_detection #(
-    4800,
-    4,
-    ,32
-    parameter ZCR_THRESHOLD = 6174;
-)
-(
-    input clk,
-    input reset,
-    
-    input input_audio [AUDIO_DATA_BIT_SIZE-1:0],
-    input dac_audio_valid,
+wire audio_data_ready;
+wire silent_val_ready;
+wire silent_or_not;
+wire analyzing_segment;
 
-    output val,
-    output val_ready
+//when we are in state 4 the mic value will have been put in the mic_input register
+assign audio_data_ready = (state==4'd4);
 
+wire reset;
+assign reset = (~KEY[0]);
+
+
+silence_detection #(
+    .FRAME_LENGTH(32768),
+    .NUM_FSM_STATES(4),
+    .AUDIO_DATA_BIT_SIZE(32),
+    .ZCR_THRESHOLD(80),
+	.SHIFT_OFFSET(6)
+) silence_detection_instance (
+    .clk(CLOCK_50),
+    .reset(reset),
+    .input_audio(mic_input),
+    .dac_audio_valid(audio_data_ready),
+    .val(silent_or_not),
+    .val_ready(silent_val_ready),
     //this signal goes high on the cycle the first sample  of the segment is analyzed
     //it goes low on the cycle the result is given
-    output analyzing_segment;
-)
+    .analyzing_segment(analyzing_segment)
+);
 
 
 always @(posedge CLOCK_50) begin //CLOCK_50
@@ -704,7 +714,6 @@ Computer_System The_System (
 	.hps_io_hps_io_usb1_inst_DIR		(HPS_USB_DIR),
 	.hps_io_hps_io_usb1_inst_NXT		(HPS_USB_NXT)
 );
-
 
 endmodule
 

@@ -44,3 +44,10 @@ s_serial_protocol.STATE_2_RESTART_BIT 0 0 0 1 0 1
 s_serial_protocol.STATE_3_START_BIT 0 0 1 0 0 1 
 s_serial_protocol.STATE_4_TRANSFER 0 1 0 0 0 1 
 s_serial_protocol.STATE_5_STOP_BIT 1 0 0 0 0 1 
+
+State Machine - |DE1_SoC_Computer|silence_detection:silence_detection_instance|current_state
+Name current_state.silence_or_not current_state.compare_signs current_state.first_sample_sign_stored current_state.idle 
+current_state.idle 0 0 0 0 
+current_state.first_sample_sign_stored 0 0 1 1 
+current_state.compare_signs 0 1 0 1 
+current_state.silence_or_not 1 0 0 1 
