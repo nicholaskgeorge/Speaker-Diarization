@@ -2,7 +2,8 @@ module silence_detection #(
     parameter FRAME_LENGTH = 4800,
     parameter NUM_FSM_STATES = 4,
     parameter AUDIO_DATA_BIT_SIZE = 32,
-    parameter ZCR_THRESHOLD = 
+    parameter ZCR_THRESHOLD = 80,
+    parameter SHIFT_OFFSET = 6
 )
 (
     input clk,
@@ -24,6 +25,7 @@ module silence_detection #(
                      compare_signs            = 2'b10,
                      silence_or_not           = 2'b11;
 
+
     //count # of samples analysed
     reg sample_counter [$clog2(FRAME_LENGTH)-1:0];
     reg sample1_sign;
@@ -36,9 +38,13 @@ module silence_detection #(
     reg new_val;
 
     wire zcr [$clog2(FRAME_LENGTH)-1:0];
-    assign zcr = num_crossings>>(clog2(FRAME_LENGTH));
+    //get zcr by normalizing by the length of the segment. shift offset so that
+    //the comparisons do not need to be decimals
+    assign zcr = num_crossings>>(clog2(FRAME_LENGTH)-SHIFT_OFFSET);
 
     wire current_sample_sign;
+
+    //the input signals are signed so just get the first bit to check sign
     assign current_sample_sign = input_audio[31];
 
     always @(posedge clk or posedge reset) begin
@@ -77,7 +83,6 @@ module silence_detection #(
                 sample_counter <= sample_counter+1;
             end
         end
-
         if (current_state == silence_or_not)begin
             num_crossings <= 0;
             sample_counter <= 0;
@@ -117,18 +122,18 @@ module silence_detection #(
             analyzing_segment = 1;
             val = 0;
             if (sample_counter == FRAME_LENGTH):
-                next_state = silence_or_not
+                next_state = silence_or_not;
             else if (dac_audio_valid):
                 next_state = first_sample_sign_stored;
             else
-                next_state = compare_signs
+                next_state = compare_signs;
         end
         else if (current_state == silence_or_not)begin
             val_ready = 1;
             analyzing_segment = 0;
             next_state = idle;
             //silence present if num_crossings less than threshold
-            val = !(num_crossings <= ZCR_THRESHOLD);
+            val = (zcr <= ZCR_THRESHOLD);
         end
         else begin
             val_ready = 0;

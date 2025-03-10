@@ -22,6 +22,11 @@ def calculate_accuracy(output_folder, decision_function):
     """
     correct_predictions = 0
     total_files = 0
+    silent_avg_zcr = 0
+    num_silent_clips = 0
+    num_voice_clips = 0
+    voice_avg_zcr = 0
+
     
     # Loop through the output folder and check each file
     for filename in os.listdir(output_folder):
@@ -38,13 +43,13 @@ def calculate_accuracy(output_folder, decision_function):
             # Apply the input decision function to the audio signal
             signal = np.array(audio.get_array_of_samples())  # Convert audio to numpy array
             decide = ["silent","voice"]
-            print(filename)
-            print(f"this samples label was {decide[label]}")
+            prediction, zcr = decision_function(signal)
+            silent_avg_zcr += zcr*(prediction == 0)
+            voice_avg_zcr += zcr*(prediction == 1)
 
-            prediction = decision_function(signal)
+            num_silent_clips += (prediction == 0)
+            num_voice_clips += (prediction == 1)
 
-            print(f"the prediction was {prediction}")
-            
             # Compare the prediction with the ground truth
             if prediction == label:
                 correct_predictions += 1
@@ -55,6 +60,8 @@ def calculate_accuracy(output_folder, decision_function):
     print(f"Total Files: {total_files}")
     print(f"Correct Predictions: {correct_predictions}")
     print(f"Accuracy: {accuracy:.2f}%")
+    print(f"Avg ZCR silent value it {silent_avg_zcr/num_silent_clips}")
+    print(f"Avg ZCR silent value it {voice_avg_zcr/num_voice_clips}")
     
     return accuracy
 
