@@ -2,10 +2,9 @@ import os
 import sys
 import numpy as np
 from pydub import AudioSegment
-
-import os
-from pydub import AudioSegment
 from pydub.silence import detect_nonsilent
+import os
+
 
 # Define source and destination directories
 source_dir = "data/audio_files/raw_dataset/VCTK/wav48"

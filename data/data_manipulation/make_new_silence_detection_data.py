@@ -28,17 +28,15 @@ def main(source_dir, dest_dir, num_files):
     num_silent_files = num_files // 2
 
     # Randomly select files for speech segments
-    if len(wav_files) < num_speech_files:
-        raise ValueError("Not enough audio files in the source directory to generate the requested number of speech clips.")
-
     selected_files = random.sample(wav_files, num_speech_files)
 
-    # Define the target sample rate
-    target_sample_rate = 48000  # 48kHz
+    # Determine the sample rate from the first file
+    sample_audio = AudioSegment.from_wav(selected_files[0])
+    sample_rate = sample_audio.frame_rate
 
     # Create and save silent audio clips
     silent_duration_ms = 1000  # 1 second
-    silent_audio = AudioSegment.silent(duration=silent_duration_ms, frame_rate=target_sample_rate)
+    silent_audio = AudioSegment.silent(duration=silent_duration_ms, frame_rate=sample_rate)
     for i in range(num_silent_files):
         silent_filename = os.path.join(dest_dir, f'silent_{i}_0.wav')
         silent_audio.export(silent_filename, format='wav')
@@ -46,8 +44,6 @@ def main(source_dir, dest_dir, num_files):
     # Create and save speech audio clips
     for i, file_path in enumerate(selected_files):
         segment = extract_random_segment(file_path, silent_duration_ms)
-        # Resample the segment to the target sample rate
-        segment = segment.set_frame_rate(target_sample_rate)
         speech_filename = os.path.join(dest_dir, f'speech_{i}_1.wav')
         segment.export(speech_filename, format='wav')
 

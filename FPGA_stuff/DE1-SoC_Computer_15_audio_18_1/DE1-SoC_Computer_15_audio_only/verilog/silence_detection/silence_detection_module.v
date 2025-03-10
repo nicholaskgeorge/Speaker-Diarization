@@ -35,6 +35,9 @@ module silence_detection #(
     reg num_crossings [$clog2(FRAME_LENGTH/2)-1:0];
     reg new_val;
 
+    wire zcr [$clog2(FRAME_LENGTH)-1:0];
+    assign zcr = num_crossings>>(clog2(FRAME_LENGTH));
+
     wire current_sample_sign;
     assign current_sample_sign = input_audio[31];
 

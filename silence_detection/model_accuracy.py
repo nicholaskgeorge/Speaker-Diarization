@@ -38,8 +38,12 @@ def calculate_accuracy(output_folder, decision_function):
             # Apply the input decision function to the audio signal
             signal = np.array(audio.get_array_of_samples())  # Convert audio to numpy array
             decide = ["silent","voice"]
+            print(filename)
             print(f"this samples label was {decide[label]}")
+
             prediction = decision_function(signal)
+
+            print(f"the prediction was {prediction}")
             
             # Compare the prediction with the ground truth
             if prediction == label:
@@ -55,7 +59,7 @@ def calculate_accuracy(output_folder, decision_function):
     return accuracy
 
 # Example usage
-output_folder = r"data\silence_detection_set"  # Replace with your output folder path
+output_folder = "data/audio_files/silence_accuracy_testing"  # Replace with your output folder path
 
 # # Call the function to calculate accuracy, passing the decision function as input
 # print("Print Sig Classify")
