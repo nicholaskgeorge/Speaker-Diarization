@@ -16,6 +16,6 @@ def zcr_calc(signal):
     #n_factor = 1/(len(signal)-1)
     # print(len(signal))
     for i in range(1,len(signal)):
-        zcr += zc_diff(signal[i]>>6,signal[i-1]>>6)
+        zcr += zc_diff(signal[i],signal[i-1])
     # print(f"zcr is {zcr>>(int(log2(len(signal))))}")
     return zcr>>(int(log2(len(signal))))

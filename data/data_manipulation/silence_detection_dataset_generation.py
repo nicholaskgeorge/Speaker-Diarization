@@ -2,12 +2,13 @@ import os
 import random
 from pydub import AudioSegment
 
-def extract_random_segment(file_path, segment_duration_ms):
+def extract_random_segment(file_path, segment_samples, sample_rate):
     audio = AudioSegment.from_wav(file_path)
     duration_ms = len(audio)
+    segment_duration_ms = int((segment_samples / sample_rate) * 1000)
     if duration_ms <= segment_duration_ms:
         return audio
-    start_ms = random.randint(0, duration_ms - segment_duration_ms)
+    start_ms = random.randint(0, int(duration_ms - segment_duration_ms))
     end_ms = start_ms + segment_duration_ms
     return audio[start_ms:end_ms]
 
@@ -33,21 +34,28 @@ def main(source_dir, dest_dir, num_files):
 
     selected_files = random.sample(wav_files, num_speech_files)
 
-    # Define the target sample rate
-    target_sample_rate = 48000  # 48kHz
+    # Define the target sample rate and segment length
+    target_sample_rate = 48000  # 48 kHz
+    segment_samples = 2**15     # 32,768 samples
+    segment_duration_ms = int((segment_samples / target_sample_rate) * 1000)
 
     # Create and save silent audio clips
-    silent_duration_ms = 1000  # 1 second
-    silent_audio = AudioSegment.silent(duration=silent_duration_ms, frame_rate=target_sample_rate)
+    silent_audio = AudioSegment.silent(duration=segment_duration_ms, frame_rate=target_sample_rate)
     for i in range(num_silent_files):
         silent_filename = os.path.join(dest_dir, f'silent_{i}_0.wav')
         silent_audio.export(silent_filename, format='wav')
 
     # Create and save speech audio clips
     for i, file_path in enumerate(selected_files):
-        segment = extract_random_segment(file_path, silent_duration_ms)
+        segment = extract_random_segment(file_path, segment_samples, target_sample_rate)
         # Resample the segment to the target sample rate
         segment = segment.set_frame_rate(target_sample_rate)
+        # Ensure the segment is exactly 32,768 samples
+        if len(segment) > segment_duration_ms:
+            segment = segment[:segment_duration_ms]
+        elif len(segment) < segment_duration_ms:
+            padding = AudioSegment.silent(duration=segment_duration_ms - len(segment), frame_rate=target_sample_rate)
+            segment += padding
         speech_filename = os.path.join(dest_dir, f'speech_{i}_1.wav')
         segment.export(speech_filename, format='wav')
 
