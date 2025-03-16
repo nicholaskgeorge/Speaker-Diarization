@@ -12,6 +12,7 @@ module silence_detection #(
     input [AUDIO_DATA_BIT_SIZE-1:0] input_audio,
     input dac_audio_valid,
 
+    //1 for silence 0 for voice present
     output reg val,
     output reg val_ready,
 
@@ -25,9 +26,10 @@ module silence_detection #(
                      compare_signs            = 2'b10,
                      silence_or_not           = 2'b11;
     
-    localparam SAMPLE_COUNTER_SIZE = $clog2(FRAME_LENGTH);
+    //I do not want to have to satrt the count from zero so plus one to avoid overflow
+    localparam SAMPLE_COUNTER_SIZE = $clog2(FRAME_LENGTH)+1;
     localparam STATE_REG_SIZE = $clog2(NUM_FSM_STATES);
-    localparam NUM_CROSSINGS_REG_SIZE = $clog2(FRAME_LENGTH/2);
+    localparam NUM_CROSSINGS_REG_SIZE = $clog2(FRAME_LENGTH);
     localparam ZCR_REG_SIZE = $clog2(FRAME_LENGTH);
 
 
@@ -82,21 +84,21 @@ module silence_detection #(
         end
         if (current_state == compare_signs) begin
             //if have crossed count the number of crossings
-            num_crossings <= num_crossings + (sample1_sign == sample2_sign);
+            if (sample1_sign != sample2_sign)
+                num_crossings <= num_crossings + 1;
+                //make the sign the same so that we do not double count
+                sample1_sign <= sample2_sign;
             if (dac_audio_valid) begin
                 sample1_sign <= current_sample_sign;
                 sample_counter <= sample_counter+1;
             end else begin
-                sample2_sign <= 0;
                 sample_counter <= sample_counter;
+                sample1_sign <= sample2_sign;
             end
-
-            num_crossings <= num_crossings;
         end
         if (current_state == silence_or_not)begin
             num_crossings <= 0;
             sample_counter <= 0;
-            num_crossings <= num_crossings;
         end
     end
         
@@ -144,7 +146,10 @@ module silence_detection #(
             analyzing_segment = 0;
             next_state = idle;
             //silence present if num_crossings less than threshold
-            val = (zcr <= ZCR_THRESHOLD);
+            if (zcr <= ZCR_THRESHOLD)
+                val=1;
+            else
+                val=0;
         end
         else begin
             val_ready = 0;

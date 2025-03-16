@@ -466,8 +466,6 @@ always @(posedge CLOCK_50) begin //CLOCK_50
 		// timer just for deubgging
 		timer <= timer + 1;
 	end
-
-	
 	
 	// set up read FIFO available space
 	if (state==4'd0) begin
