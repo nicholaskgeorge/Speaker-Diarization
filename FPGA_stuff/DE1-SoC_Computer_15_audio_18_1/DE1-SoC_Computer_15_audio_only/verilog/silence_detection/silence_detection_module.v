@@ -12,13 +12,14 @@ module silence_detection #(
     input [AUDIO_DATA_BIT_SIZE-1:0] input_audio,
     input dac_audio_valid,
 
-    //1 for silence 0 for voice present
+    //1 for voice 0 silence
     output reg val,
     output reg val_ready,
 
     //this signal goes high on the cycle the first sample  of the segment is analyzed
     //it goes low on the cycle the result is given
-    output reg analyzing_segment
+    output reg analyzing_segment,
+    output [1:0] current_s
 );
     //states for silence detection FSM
     localparam [1:0] idle                     = 2'b00,
@@ -31,6 +32,9 @@ module silence_detection #(
     localparam STATE_REG_SIZE = $clog2(NUM_FSM_STATES);
     localparam NUM_CROSSINGS_REG_SIZE = $clog2(FRAME_LENGTH);
     localparam ZCR_REG_SIZE = $clog2(FRAME_LENGTH);
+    //since the FPGA is 50mhz/48khz = 1042 times faster than the ADC we need to wait some cycles before 
+    //checking the ADC or else we read the same value 1042 imes. 1600 is enough cylces so that we should have the correct value
+    localparam ADC_SAMPLE_WAIT_TIME = 32'd1600;
 
 
     //count # of samples analysed
@@ -42,20 +46,32 @@ module silence_detection #(
     //note: since two sample are needed to determine a crossing then
     //      then the num_crossings can be at max FRAME_LENGTH/2
     reg [NUM_CROSSINGS_REG_SIZE-1:0] num_crossings;
-
     wire [ZCR_REG_SIZE-1:0] zcr;
     //get zcr by normalizing by the length of the segment. shift offset so that
     //the comparisons do not need to be decimals
     assign zcr = num_crossings>>(ZCR_REG_SIZE-SHIFT_OFFSET);
-
     wire current_sample_sign;
-
     //the input signals are signed so just get the first bit to check sign
     assign current_sample_sign = input_audio[31];
+    assign current_s = current_state;
+
+    wire save_sample_condition;
+
+    //we will only save a new sample if there is valid audio, we have waited 1600 cylces for the next value, and we have not already collected a value
+    assign save_sample_condition = dac_audio_valid && cycles_since_last_sample >= ADC_SAMPLE_WAIT_TIME && !reset_cycles_since_last_sample;
+
+    reg [31:0] cycles_since_last_sample;
+    reg reset_cycles_since_last_sample;
+
 
     always @(posedge clk) begin
         current_state <= next_state;
         //always capture the audio
+
+        if (!reset_cycles_since_last_sample)
+            cycles_since_last_sample <= cycles_since_last_sample + 1;
+        else
+            cycles_since_last_sample <= 0;
 
         if (reset) begin
             sample_counter <= 0;
@@ -63,23 +79,33 @@ module silence_detection #(
             num_crossings  <= 0;
             sample1_sign   <= 0;
             sample2_sign   <= 0;
+            reset_cycles_since_last_sample <= 1;
         end
         if (current_state == idle)begin
-            if (dac_audio_valid) begin
+            if (save_sample_condition) begin
                 //must catch the sign now BEFORE going to first_sample_sign_stored state
                 sample1_sign <= current_sample_sign;
                 //increment sample count
                 sample_counter <= sample_counter + 1;
+
+                reset_cycles_since_last_sample <= 1;
             end
+            else
+                //stop reseting the cycle count when we transition to new a state
+                reset_cycles_since_last_sample <= 0;
             //infered latch fix
             num_crossings <= num_crossings;
         end
         if (current_state == first_sample_sign_stored)begin
             //store the sign BEFORE going to comparison
-            if(dac_audio_valid) begin
+            if(save_sample_condition) begin
                 sample2_sign <= current_sample_sign;
                 sample_counter <= sample_counter + 1;
+                reset_cycles_since_last_sample <= 1;
             end
+            else
+                //stop reseting the cycle count when we transition to new a state
+                reset_cycles_since_last_sample <= 0;
             num_crossings <= num_crossings;
         end
         if (current_state == compare_signs) begin
@@ -88,17 +114,24 @@ module silence_detection #(
                 num_crossings <= num_crossings + 1;
                 //make the sign the same so that we do not double count
                 sample1_sign <= sample2_sign;
-            if (dac_audio_valid) begin
+
+            if (save_sample_condition) begin
                 sample1_sign <= current_sample_sign;
                 sample_counter <= sample_counter+1;
+                //stop reseting the cycle count when we transition to new a state
+                reset_cycles_since_last_sample <= 1;
             end else begin
                 sample_counter <= sample_counter;
+                //put so that is doesnt double count
                 sample1_sign <= sample2_sign;
+                 //stop reseting the cycle count when we transition to new a state
+                reset_cycles_since_last_sample <= 0;
             end
         end
         if (current_state == silence_or_not)begin
             num_crossings <= 0;
             sample_counter <= 0;
+            reset_cycles_since_last_sample <= 1 ;
         end
     end
         
@@ -116,7 +149,7 @@ module silence_detection #(
             val_ready = 0;
             analyzing_segment = 0;
             val = 0;
-            if(dac_audio_valid)
+            if(save_sample_condition)
                 next_state = first_sample_sign_stored;
             else
                 next_state = idle;
@@ -125,7 +158,7 @@ module silence_detection #(
             val_ready = 0;
             analyzing_segment = 1;
             val = 0;
-            if(dac_audio_valid)
+            if(save_sample_condition)
                 next_state = compare_signs;
             else
                 next_state = first_sample_sign_stored;
@@ -136,7 +169,7 @@ module silence_detection #(
             val = 0;
             if (sample_counter == FRAME_LENGTH)
                 next_state = silence_or_not;
-            else if (dac_audio_valid)
+            else if (save_sample_condition)
                 next_state = first_sample_sign_stored;
             else
                 next_state = compare_signs;

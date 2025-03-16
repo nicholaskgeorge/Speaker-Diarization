@@ -371,6 +371,7 @@ wire			[15: 0]	hex3_hex0;
 // assign HEX2 = 7'b1111111;
 // assign HEX1 = 7'b1111111;
 // assign HEX0 = 7'b1111111;
+// HexDigit HexDisplay(HEX0, silent_or_not);
 HexDigit HexDisplay(HEX0, silent_or_not);
 
 //=======================================================
@@ -399,7 +400,8 @@ wire state_clock ;
 // current free words in audio interface
 reg [7:0] fifo_space ;
 // debug check of space
-assign LEDR = fifo_space ;
+// assign LEDR = fifo_space ;
+assign LEDR[0] = silent_or_not;
 
 // use 4-byte-wide bus-master	 
 //assign bus_byte_enable = 4'b1111;
@@ -433,9 +435,12 @@ assign audio_data_ready = (state==4'd4);
 wire reset;
 assign reset = (~KEY[0]);
 
+wire [1:0] silence_modeule_current_state;
+
+
 
 silence_detection #(
-    .FRAME_LENGTH(32768),
+    .FRAME_LENGTH(15038),
     .NUM_FSM_STATES(4),
     .AUDIO_DATA_BIT_SIZE(32),
     .ZCR_THRESHOLD(80),
@@ -449,7 +454,8 @@ silence_detection #(
     .val_ready(silent_val_ready),
     //this signal goes high on the cycle the first sample  of the segment is analyzed
     //it goes low on the cycle the result is given
-    .analyzing_segment(analyzing_segment)
+    .analyzing_segment(analyzing_segment),
+	.current_s(silence_modeule_current_state)
 );
 
 
